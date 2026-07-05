@@ -91,7 +91,7 @@ export default function ExerciseBrowser() {
                     onChange={e => { setSearch(e.target.value); setActiveFilter(null); setActiveSubFilter(null); }}
                 />
                 {search && (
-                    <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                    <button onClick={() => setSearch('')} aria-label="Wyczyść wyszukiwanie" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                         <X size={16} strokeWidth={2} color="var(--text-dim)" />
                     </button>
                 )}

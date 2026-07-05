@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUser, saveUser } from '../data/store';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import { supabase } from '../lib/supabase';
 import ImageCropper from '../components/ImageCropper';
 import { ChevronRight, ChevronDown, Target, SlidersHorizontal, Volume2, MessageSquareWarning, ClipboardList } from 'lucide-react';
@@ -25,9 +25,14 @@ export default function Settings() {
     const [feedbackStatus, setFeedbackStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
     useEffect(() => {
-        document.documentElement.setAttribute('data-theme', user.theme);
+        const applyThemeColor = (theme: string) => {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.querySelector('meta[name="theme-color"]')
+                ?.setAttribute('content', theme === 'light' ? '#F5F5F7' : '#000000');
+        };
+        applyThemeColor(user.theme);
         return () => {
-            document.documentElement.setAttribute('data-theme', getUser().theme);
+            applyThemeColor(getUser().theme);
         };
     }, [user.theme]);
 
@@ -133,7 +138,7 @@ export default function Settings() {
         <div className="page">
             <div className="page-header">
                 <div className="flex items-center gap-md">
-                    <button className="back-btn" onClick={() => navigate('/profile')}>
+                    <button className="back-btn" aria-label="Wstecz" onClick={() => navigate('/profile')}>
                         ←
                     </button>
                     <h1 className="page-title">Ustawienia</h1>

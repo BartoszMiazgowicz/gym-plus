@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCompletedWorkouts, getBadges, saveBadges, addFeedPost } from '../../data/store';
+import { getCompletedWorkouts, getBadges, saveBadges, addFeedPost, uuid } from '../../data/store';
 import { Lock, CheckCircle, Share2 } from 'lucide-react';
 import type { BadgeRecord } from '../../data/store';
 
@@ -119,7 +119,7 @@ export default function Badges() {
     const handleShareBadge = (def: BadgeDef, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
         addFeedPost({
-            id: `badge-${def.id}-${Date.now()}`,
+            id: `badge-${def.id}-${uuid()}`,
             type: 'badge',
             timestamp: new Date().toISOString(),
             data: { icon: def.icon, name: def.name },
@@ -151,6 +151,7 @@ export default function Badges() {
             setNewBadgePopup(newlyUnlocked[0]);
             setPopupQueue(newlyUnlocked.slice(1));
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ctx]);
 
     const handlePopupShare = () => {
@@ -179,7 +180,7 @@ export default function Badges() {
         <div className="page">
             <div className="page-header">
                 <div className="flex items-center gap-md">
-                    <button className="back-btn" onClick={() => navigate('/workout')}>←</button>
+                    <button className="back-btn" aria-label="Wstecz" onClick={() => navigate('/workout')}>←</button>
                     <h1 className="page-title">Odznaki</h1>
                 </div>
                 <span style={{ font: 'var(--caption)', color: 'var(--text-muted)' }}>

@@ -131,7 +131,7 @@ export default function DietJournal({ onRefresh }: Props) {
                 const calEnd = new Date(Math.min(endDate.getTime(), now.getTime()));
                 calEnd.setDate(calEnd.getDate() + (7 - calEnd.getDay()) % 7); // end of week
 
-                let cursor = new Date(calStart);
+                const cursor = new Date(calStart);
                 while (cursor <= calEnd) {
                     const week: typeof calendarWeeks[0] = [];
                     for (let d = 0; d < 7; d++) {
@@ -345,7 +345,7 @@ export default function DietJournal({ onRefresh }: Props) {
                                                 </span>
                                             </div>
                                         </div>
-                                        <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteMeal(m.id)} style={{ padding: 4, opacity: 0.5 }}>
+                                        <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteMeal(m.id)} aria-label="Usuń posiłek" style={{ padding: 4, opacity: 0.5 }}>
                                             <X size={14} strokeWidth={1.5} />
                                         </button>
                                     </div>

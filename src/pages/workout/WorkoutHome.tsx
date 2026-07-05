@@ -3,9 +3,7 @@ import { getCompletedWorkouts, getActiveWorkout, saveWorkout, uuid, getUser, get
 import { timeAgo, formatDuration } from '../../utils/calculations';
 import { Zap, Play, RotateCcw, Calendar, ClipboardList, Dumbbell, Award, ChevronRight, Timer, Scale, Activity, BookOpen } from 'lucide-react';
 
-interface Props { onRefresh: () => void; }
-
-export default function WorkoutHome({ }: Props) {
+export default function WorkoutHome() {
     const navigate = useNavigate();
     const user = getUser();
     const workouts = getCompletedWorkouts().slice(0, 5);
@@ -37,7 +35,7 @@ export default function WorkoutHome({ }: Props) {
                 status: 'active' as const,
                 created_at: new Date().toISOString(),
             };
-            saveWorkout(session as any);
+            saveWorkout(session);
             navigate('/workout/active');
         } else {
             const session = {

@@ -192,6 +192,7 @@ export default function Templates() {
                                     style={{ padding: 6 }}
                                     onClick={() => navigate(`/workout/templates/${t.id}`)}
                                     title="Edytuj"
+                                    aria-label="Edytuj szablon"
                                 >
                                     <Pencil size={15} strokeWidth={1.5} style={{ color: 'var(--text-muted)' }} />
                                 </button>
@@ -218,6 +219,7 @@ export default function Templates() {
                                     style={{ color: '#FF6B6B', padding: 6 }}
                                     onClick={() => handleDelete(t.id)}
                                     title="Usuń"
+                                    aria-label="Usuń szablon"
                                 >
                                     <Trash2 size={15} strokeWidth={1.5} />
                                 </button>

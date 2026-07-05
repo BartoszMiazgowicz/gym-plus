@@ -10,6 +10,7 @@ export default function CalorieGoals() {
     const [goal, setGoal] = useState<'cut' | 'maintain' | 'bulk'>('maintain');
     const [deficit, setDeficit] = useState(500);
 
+    // eslint-disable-next-line react-hooks/purity -- age only needs to be right to the day, a stale value across renders is harmless
     const age = user.birth_date ? Math.floor((Date.now() - new Date(user.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 25;
     const weight = 80;
     const height = user.height_cm || 175;

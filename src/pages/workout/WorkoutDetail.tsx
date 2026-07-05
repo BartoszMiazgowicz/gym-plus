@@ -22,7 +22,7 @@ export default function WorkoutDetail() {
         return (
             <div className="page">
                 <div className="page-header">
-                    <button className="back-btn" onClick={() => navigate(-1)}>←</button>
+                    <button className="back-btn" aria-label="Wstecz" onClick={() => navigate(-1)}>←</button>
                 </div>
                 <div className="empty-state">
                     <div className="empty-state-text">Nie znaleziono treningu</div>
@@ -86,7 +86,7 @@ export default function WorkoutDetail() {
             {/* Header */}
             <div className="page-header">
                 <div className="flex items-center gap-md">
-                    <button className="back-btn" onClick={() => navigate(-1)}>←</button>
+                    <button className="back-btn" aria-label="Wstecz" onClick={() => navigate(-1)}>←</button>
                     <div>
                         <h1 className="page-title" style={{ marginBottom: 2 }}>{workout.name}</h1>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -96,6 +96,7 @@ export default function WorkoutDetail() {
                 </div>
                 <button
                     onClick={() => setShowDeleteConfirm(true)}
+                    aria-label="Usuń trening"
                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}
                 >
                     <Trash2 size={20} color="#FF6B6B" strokeWidth={1.5} />

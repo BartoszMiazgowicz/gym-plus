@@ -1,39 +1,48 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { getUser } from './data/store';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth } from './contexts/useAuth';
 import { useSync } from './hooks/useSync';
 import BottomNav from './components/BottomNav';
 import LoadingScreen from './components/LoadingScreen';
-import Dashboard from './pages/Dashboard';
-import WorkoutHome from './pages/workout/WorkoutHome';
-import ActiveWorkout from './pages/workout/ActiveWorkout';
-import ExerciseBrowser from './pages/workout/ExerciseBrowser';
-import Templates from './pages/workout/Templates';
-import History from './pages/workout/History';
-import PRStats from './pages/workout/PRStats';
-import Badges from './pages/workout/Badges';
-import WorkoutDetail from './pages/workout/WorkoutDetail';
-import TemplateEditor from './pages/workout/TemplateEditor';
-import HIITTimer from './pages/workout/HIITTimer';
-import StrengthCalculator from './pages/workout/StrengthCalculator';
-import MuscleMap from './pages/workout/MuscleMap';
-import WorkoutCalendar from './pages/workout/WorkoutCalendar';
-import ExerciseDetail from './pages/workout/ExerciseDetail';
-import DietJournal from './pages/diet/DietJournal';
-import FoodSearch from './pages/diet/FoodSearch';
-import Recipes from './pages/diet/Recipes';
-import WeightTracker from './pages/diet/WeightTracker';
-import CalorieGoals from './pages/diet/CalorieGoals';
-import DietBadges from './pages/diet/DietBadges';
-import Profile from './pages/Profile';
-import Physique from './pages/Physique';
-import WeightPlan from './pages/WeightPlan';
-import Settings from './pages/Settings';
-import FeedbackAdmin from './pages/FeedbackAdmin';
 import Onboarding from './pages/Onboarding';
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const WorkoutHome = lazy(() => import('./pages/workout/WorkoutHome'));
+const ActiveWorkout = lazy(() => import('./pages/workout/ActiveWorkout'));
+const ExerciseBrowser = lazy(() => import('./pages/workout/ExerciseBrowser'));
+const Templates = lazy(() => import('./pages/workout/Templates'));
+const History = lazy(() => import('./pages/workout/History'));
+const PRStats = lazy(() => import('./pages/workout/PRStats'));
+const Badges = lazy(() => import('./pages/workout/Badges'));
+const WorkoutDetail = lazy(() => import('./pages/workout/WorkoutDetail'));
+const TemplateEditor = lazy(() => import('./pages/workout/TemplateEditor'));
+const HIITTimer = lazy(() => import('./pages/workout/HIITTimer'));
+const StrengthCalculator = lazy(() => import('./pages/workout/StrengthCalculator'));
+const MuscleMap = lazy(() => import('./pages/workout/MuscleMap'));
+const WorkoutCalendar = lazy(() => import('./pages/workout/WorkoutCalendar'));
+const ExerciseDetail = lazy(() => import('./pages/workout/ExerciseDetail'));
+const DietJournal = lazy(() => import('./pages/diet/DietJournal'));
+const FoodSearch = lazy(() => import('./pages/diet/FoodSearch'));
+const Recipes = lazy(() => import('./pages/diet/Recipes'));
+const WeightTracker = lazy(() => import('./pages/diet/WeightTracker'));
+const CalorieGoals = lazy(() => import('./pages/diet/CalorieGoals'));
+const DietBadges = lazy(() => import('./pages/diet/DietBadges'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Physique = lazy(() => import('./pages/Physique'));
+const WeightPlan = lazy(() => import('./pages/WeightPlan'));
+const Settings = lazy(() => import('./pages/Settings'));
+const FeedbackAdmin = lazy(() => import('./pages/FeedbackAdmin'));
+const Login = lazy(() => import('./pages/auth/Login'));
+const Register = lazy(() => import('./pages/auth/Register'));
+
+function RouteFallback() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <div className="animate-pulse" style={{ font: 'var(--body)', color: 'var(--text-secondary)' }}>Ładowanie...</div>
+    </div>
+  );
+}
 
 function App() {
   const { user: authUser, isLoading } = useAuth();
@@ -53,6 +62,8 @@ function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', user.theme);
+    document.querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', user.theme === 'light' ? '#F5F5F7' : '#000000');
   }, [user.theme]);
 
   // Show loading while auth is resolving or sync is downloading data from cloud.
@@ -68,11 +79,13 @@ function App() {
     return (
       <BrowserRouter>
         <div className="app-container app-container--auth">
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </Suspense>
         </div>
       </BrowserRouter>
     );
@@ -85,35 +98,37 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app-container">
-        <Routes>
-          <Route path="/" element={<Dashboard key={refreshKey} onRefresh={refresh} />} />
-          <Route path="/workout" element={<WorkoutHome onRefresh={refresh} />} />
-          <Route path="/workout/active" element={<ActiveWorkout onRefresh={refresh} />} />
-          <Route path="/workout/exercises" element={<ExerciseBrowser />} />
-          <Route path="/workout/templates" element={<Templates />} />
-          <Route path="/workout/templates/:id" element={<TemplateEditor />} />
-          <Route path="/workout/history" element={<History />} />
-          <Route path="/workout/detail/:id" element={<WorkoutDetail />} />
-          <Route path="/workout/pr" element={<PRStats />} />
-          <Route path="/workout/badges" element={<Badges />} />
-          <Route path="/workout/timer" element={<HIITTimer />} />
-          <Route path="/workout/calculator" element={<StrengthCalculator />} />
-          <Route path="/workout/muscles" element={<MuscleMap />} />
-          <Route path="/workout/calendar" element={<WorkoutCalendar />} />
-          <Route path="/workout/exercise/:id" element={<ExerciseDetail />} />
-          <Route path="/diet" element={<DietJournal key={refreshKey} onRefresh={refresh} />} />
-          <Route path="/diet/search" element={<FoodSearch onRefresh={refresh} />} />
-          <Route path="/diet/recipes" element={<Recipes />} />
-          <Route path="/diet/weight" element={<WeightTracker />} />
-          <Route path="/diet/goals" element={<CalorieGoals />} />
-          <Route path="/diet/badges" element={<DietBadges />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/physique" element={<Physique />} />
-          <Route path="/weight-plan" element={<WeightPlan />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/settings/feedback" element={<FeedbackAdmin />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<Dashboard key={refreshKey} onRefresh={refresh} />} />
+            <Route path="/workout" element={<WorkoutHome />} />
+            <Route path="/workout/active" element={<ActiveWorkout onRefresh={refresh} />} />
+            <Route path="/workout/exercises" element={<ExerciseBrowser />} />
+            <Route path="/workout/templates" element={<Templates />} />
+            <Route path="/workout/templates/:id" element={<TemplateEditor />} />
+            <Route path="/workout/history" element={<History />} />
+            <Route path="/workout/detail/:id" element={<WorkoutDetail />} />
+            <Route path="/workout/pr" element={<PRStats />} />
+            <Route path="/workout/badges" element={<Badges />} />
+            <Route path="/workout/timer" element={<HIITTimer />} />
+            <Route path="/workout/calculator" element={<StrengthCalculator />} />
+            <Route path="/workout/muscles" element={<MuscleMap />} />
+            <Route path="/workout/calendar" element={<WorkoutCalendar />} />
+            <Route path="/workout/exercise/:id" element={<ExerciseDetail />} />
+            <Route path="/diet" element={<DietJournal key={refreshKey} onRefresh={refresh} />} />
+            <Route path="/diet/search" element={<FoodSearch onRefresh={refresh} />} />
+            <Route path="/diet/recipes" element={<Recipes />} />
+            <Route path="/diet/weight" element={<WeightTracker />} />
+            <Route path="/diet/goals" element={<CalorieGoals />} />
+            <Route path="/diet/badges" element={<DietBadges />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/physique" element={<Physique />} />
+            <Route path="/weight-plan" element={<WeightPlan />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings/feedback" element={<FeedbackAdmin />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
         <BottomNav />
       </div>
     </BrowserRouter>

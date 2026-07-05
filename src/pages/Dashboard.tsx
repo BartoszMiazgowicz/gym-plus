@@ -11,7 +11,7 @@ import {
     Send, Bookmark, MoreHorizontal, Zap, Trash2, X,
     Users, Lock, ChevronLeft, ChevronRight, List
 } from 'lucide-react';
-import type { FeedPost } from '../data/store';
+import type { FeedPost, FeedExerciseSummary } from '../data/store';
 
 interface Props { onRefresh: () => void; }
 
@@ -89,7 +89,7 @@ function SwipeCarousel({ slides }: { slides: React.ReactNode[] }) {
     );
 }
 
-function ExerciseSlide({ exercises, onExpand }: { exercises: any[]; onExpand: () => void }) {
+function ExerciseSlide({ exercises, onExpand }: { exercises: FeedExerciseSummary[]; onExpand: () => void }) {
     return (
         <div
             onClick={onExpand}
@@ -106,10 +106,10 @@ function ExerciseSlide({ exercises, onExpand }: { exercises: any[]; onExpand: ()
                     {exercises.length} ćwiczeń
                 </span>
             </div>
-            {exercises.slice(0, 6).map((ex: any, i: number) => {
+            {exercises.slice(0, 6).map((ex, i) => {
                 const info = exerciseDatabase.find(e => e.id === ex.exercise_id);
                 const completedSets = ex.sets?.length || 0;
-                const bestSet = ex.sets?.reduce((best: any, s: any) => {
+                const bestSet = ex.sets?.reduce((best: FeedExerciseSummary['sets'][number] | null, s) => {
                     const vol = (s.weight_kg || 0) * (s.reps || 0);
                     return vol > (best ? (best.weight_kg || 0) * (best.reps || 0) : 0) ? s : best;
                 }, null);
@@ -161,7 +161,7 @@ export default function Dashboard({ onRefresh }: Props) {
     const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
     const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
     const [menuPost, setMenuPost] = useState<string | null>(null);
-    const [expandedExercises, setExpandedExercises] = useState<any[] | null>(null);
+    const [expandedExercises, setExpandedExercises] = useState<FeedExerciseSummary[] | null>(null);
     const [feedTab, setFeedTab] = useState<'foryou' | 'friends' | 'followers'>('foryou');
 
     const toggleLike = (id: string) => {
@@ -516,11 +516,11 @@ export default function Dashboard({ onRefresh }: Props) {
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                             <span style={{ fontSize: 16, fontWeight: 700 }}>Ćwiczenia ({expandedExercises.length})</span>
-                            <button onClick={() => setExpandedExercises(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                            <button onClick={() => setExpandedExercises(null)} aria-label="Zamknij" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                                 <X size={20} color="#fff" />
                             </button>
                         </div>
-                        {expandedExercises.map((ex: any, i: number) => {
+                        {expandedExercises.map((ex, i) => {
                             const info = exerciseDatabase.find(e => e.id === ex.exercise_id);
                             return (
                                 <div key={i} style={{
@@ -539,7 +539,7 @@ export default function Dashboard({ onRefresh }: Props) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {(ex.sets || []).map((set: any, si: number) => (
+                                            {(ex.sets || []).map((set, si) => (
                                                 <tr key={si} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                                                     <td style={{ fontSize: 12, padding: '6px 0', color: set.set_type === 'warmup' ? 'var(--warning)' : 'var(--text-secondary)' }}>
                                                         {set.set_type === 'warmup' ? 'R' : si + 1}

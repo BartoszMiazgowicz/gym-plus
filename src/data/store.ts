@@ -1,6 +1,6 @@
 import { defaultUser } from '../types/user';
 import type { User } from '../types/user';
-import type { WorkoutSession, WorkoutTemplate, PRRecord } from '../types/workout';
+import type { WorkoutSession, WorkoutTemplate, PRRecord, SetType } from '../types/workout';
 import type { MealEntry, WeightEntry, WaterEntry, Recipe } from '../types/diet';
 
 export interface BodyMeasurement {
@@ -29,11 +29,31 @@ export interface BadgeRecord {
 
 export type PostVisibility = 'public' | 'followers' | 'private';
 
+export interface FeedExerciseSummary {
+    exercise_id: string;
+    sets: { weight_kg?: number; reps?: number; set_type?: SetType }[];
+}
+
+export interface FeedPostData {
+    // workout posts
+    name?: string;
+    duration_seconds?: number;
+    total_volume_kg?: number;
+    total_sets?: number;
+    total_reps?: number;
+    exercises_count?: number;
+    exercises?: FeedExerciseSummary[];
+    // badge posts
+    icon?: string;
+    // weight posts
+    weight_kg?: number;
+}
+
 export interface FeedPost {
     id: string;
     type: 'workout' | 'badge' | 'weight';
     timestamp: string;
-    data: any;
+    data: FeedPostData;
     description?: string;
     photos?: string[];
     visibility?: PostVisibility;
@@ -86,7 +106,7 @@ export function getAllData() {
     };
 }
 
-export function loadAllData(data: any): void {
+export function loadAllData(data: Partial<ReturnType<typeof getAllData>>): void {
     if (data.user) localStorage.setItem(KEYS.USER, JSON.stringify(data.user));
     if (data.workouts) localStorage.setItem(KEYS.WORKOUTS, JSON.stringify(data.workouts));
     if (data.templates) localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(data.templates));

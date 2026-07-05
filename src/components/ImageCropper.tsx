@@ -14,6 +14,7 @@ export default function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
 
     // Transform state: offset and scale
     const [scale, setScale] = useState(1);
+    const [baseScale, setBaseScale] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const dragging = useRef(false);
     const lastPos = useRef({ x: 0, y: 0 });
@@ -30,6 +31,7 @@ export default function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
             // Fit image so the shorter side fills the canvas
             const fitScale = CANVAS_SIZE / Math.min(img.width, img.height);
             setScale(fitScale);
+            setBaseScale(fitScale);
             setOffset({
                 x: (CANVAS_SIZE - img.width * fitScale) / 2,
                 y: (CANVAS_SIZE - img.height * fitScale) / 2,
@@ -203,11 +205,8 @@ export default function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
                             min="0.2"
                             max="3"
                             step="0.01"
-                            value={scale / (CANVAS_SIZE / (imgRef.current ? Math.min(imgRef.current.width, imgRef.current.height) : CANVAS_SIZE))}
+                            value={scale / baseScale}
                             onChange={(e) => {
-                                const img = imgRef.current;
-                                if (!img) return;
-                                const baseScale = CANVAS_SIZE / Math.min(img.width, img.height);
                                 setScale(baseScale * parseFloat(e.target.value));
                             }}
                             style={{ width: '100%', accentColor: 'var(--accent)' }}

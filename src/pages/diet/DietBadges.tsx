@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllMeals, getUser, getRecipes, getWeightEntries, getBadges, saveBadges, addFeedPost } from '../../data/store';
+import { getAllMeals, getUser, getRecipes, getWeightEntries, getBadges, saveBadges, addFeedPost, uuid } from '../../data/store';
 import { Lock, CheckCircle, Share2 } from 'lucide-react';
 import type { BadgeRecord } from '../../data/store';
 
@@ -173,7 +173,7 @@ export default function DietBadges() {
     const handleShareBadge = (def: BadgeDef, e: React.MouseEvent) => {
         e.stopPropagation();
         addFeedPost({
-            id: `badge-${def.id}-${Date.now()}`,
+            id: `badge-${def.id}-${uuid()}`,
             type: 'badge',
             timestamp: new Date().toISOString(),
             data: { icon: def.icon, name: def.name },
@@ -199,6 +199,7 @@ export default function DietBadges() {
             saveBadges(current);
             setSavedBadges(current);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ctx]);
 
     const unlockedIds = new Set(savedBadges.map(b => b.id));
@@ -209,7 +210,7 @@ export default function DietBadges() {
         <div className="page">
             <div className="page-header">
                 <div className="flex items-center gap-md">
-                    <button className="back-btn" onClick={() => navigate('/diet')}>←</button>
+                    <button className="back-btn" aria-label="Wstecz" onClick={() => navigate('/diet')}>←</button>
                     <h1 className="page-title">Odznaki diety</h1>
                 </div>
                 <span style={{ font: 'var(--caption)', color: 'var(--text-muted)' }}>

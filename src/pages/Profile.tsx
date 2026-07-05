@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import { getUser, getCompletedWorkouts, getBadges, saveUser, getAllMeals, getWeightEntries, getAllWater } from '../data/store';
 import { isDeveloperEmail } from '../lib/developers';
 import { Settings, LogOut, Flame, Pencil, Code2 } from 'lucide-react';
@@ -322,6 +322,7 @@ export default function Profile() {
                 <h1 className="page-title">Profil</h1>
                 <button
                     onClick={() => navigate('/settings')}
+                    aria-label="Ustawienia"
                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}
                 >
                     <Settings size={22} color="var(--text-secondary)" strokeWidth={1.5} />
@@ -330,7 +331,7 @@ export default function Profile() {
 
             {/* User info */}
             <div className="card mb-lg">
-                <div className="flex items-center gap-md">
+                <div className="flex items-center" style={{ gap: 12 }}>
                     <div style={{
                         width: 104, height: 104, borderRadius: '50%',
                         background: 'transparent',
@@ -377,20 +378,20 @@ export default function Profile() {
                                 @{user.username || 'identyfikator'}
                             </span>
                         </div>
-                        <div className="flex items-center gap-md" style={{ marginTop: 10 }}>
-                            <div style={{ textAlign: 'center' }}>
+                        <div className="flex items-center" style={{ marginTop: 10, gap: 6, minWidth: 0 }}>
+                            <div style={{ textAlign: 'center', flexShrink: 0 }}>
                                 <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{workoutCount}</div>
-                                <div style={{ font: 'var(--label)', color: 'var(--text-muted)', fontSize: 10 }}>treningów</div>
+                                <div style={{ font: 'var(--label)', color: 'var(--text-muted)', fontSize: 10, whiteSpace: 'nowrap' }}>treningów</div>
                             </div>
-                            <div style={{ width: 1, height: 24, background: 'var(--border-light)' }} />
-                            <div style={{ textAlign: 'center' }}>
+                            <div style={{ width: 1, height: 24, background: 'var(--border-light)', flexShrink: 0 }} />
+                            <div style={{ textAlign: 'center', flexShrink: 0 }}>
                                 <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>0</div>
-                                <div style={{ font: 'var(--label)', color: 'var(--text-muted)', fontSize: 10 }}>obserwujących</div>
+                                <div style={{ font: 'var(--label)', color: 'var(--text-muted)', fontSize: 10, whiteSpace: 'nowrap' }}>obserwujących</div>
                             </div>
-                            <div style={{ width: 1, height: 24, background: 'var(--border-light)' }} />
-                            <div style={{ textAlign: 'center' }}>
+                            <div style={{ width: 1, height: 24, background: 'var(--border-light)', flexShrink: 0 }} />
+                            <div style={{ textAlign: 'center', flexShrink: 0 }}>
                                 <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>0</div>
-                                <div style={{ font: 'var(--label)', color: 'var(--text-muted)', fontSize: 10 }}>obserwowanych</div>
+                                <div style={{ font: 'var(--label)', color: 'var(--text-muted)', fontSize: 10, whiteSpace: 'nowrap' }}>obserwowanych</div>
                             </div>
                         </div>
                     </div>

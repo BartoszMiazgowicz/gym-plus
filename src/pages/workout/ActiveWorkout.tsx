@@ -4,9 +4,9 @@ import { getActiveWorkout, saveWorkout, getWorkouts, uuid, getUser, addFeedPost,
 import { exerciseDatabase, muscleGroupNames, exerciseFilters } from '../../data/exercises';
 import { formatDuration, calculateVolume, estimate1RM } from '../../utils/calculations';
 import { playRestEndSound } from '../../utils/sounds';
-import type { WorkoutExercise, SetEntry, SetType, Exercise } from '../../types/workout';
+import type { WorkoutExercise, SetEntry, SetType, Exercise, WorkoutSession } from '../../types/workout';
 import { ChevronLeft, MoreVertical, Check, X, Search, Plus, Minus, Dumbbell, Share2, Clock, BarChart3, Repeat, Image, Globe, Users, Lock, RotateCw, RotateCcw, FlipHorizontal2, Trophy, Info } from 'lucide-react';
-import type { PostVisibility } from '../../data/store';
+import type { PostVisibility, FeedPost } from '../../data/store';
 
 interface PhotoEditorProps {
     src: string;
@@ -105,7 +105,7 @@ function PhotoEditor({ src, onDone, onCancel }: PhotoEditorProps) {
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '16px 20px',
             }}>
-                <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <button onClick={onCancel} aria-label="Anuluj" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                     <X size={24} color="#fff" />
                 </button>
                 <span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>Przytnij zdjęcie</span>
@@ -212,10 +212,9 @@ export default function ActiveWorkout({ onRefresh }: Props) {
     const filtersRowRef = useRef<HTMLDivElement>(null);
     const [restTimer, setRestTimer] = useState(0);
     const [restTotal, setRestTotal] = useState(user.rest_timer_default);
-    const [showTimer, setShowTimer] = useState(false);
     const [exRestMap, setExRestMap] = useState<Record<string, number>>({});
     const [showSummary, setShowSummary] = useState(false);
-    const [finishedData, setFinishedData] = useState<any>(null);
+    const [finishedData, setFinishedData] = useState<WorkoutSession | null>(null);
     const [postTitle, setPostTitle] = useState('');
     const [postDesc, setPostDesc] = useState('');
     const [postPhotos, setPostPhotos] = useState<string[]>([]);
@@ -261,7 +260,7 @@ export default function ActiveWorkout({ onRefresh }: Props) {
     }, [workout?.started_at]);
 
     useEffect(() => {
-        if (restTimer <= 0) { setShowTimer(false); return; }
+        if (restTimer <= 0) return;
         if (restTimer === 1) {
             setTimeout(() => playRestEndSound(), 1000);
         }
@@ -277,10 +276,10 @@ export default function ActiveWorkout({ onRefresh }: Props) {
 
     if (!workout) { navigate('/workout'); return null; }
 
-    const updateWorkout = (updates: Partial<typeof workout>) => {
+    const updateWorkout = (updates: Partial<WorkoutSession>) => {
         const updated = { ...workout, ...updates };
-        setWorkout(updated as any);
-        saveWorkout(updated as any);
+        setWorkout(updated);
+        saveWorkout(updated);
     };
 
     const addExercise = (exercise: Exercise) => {
@@ -329,9 +328,9 @@ export default function ActiveWorkout({ onRefresh }: Props) {
         updateWorkout({ exercises });
     };
 
-    const updateSet = (exIndex: number, setIndex: number, field: keyof SetEntry, value: any) => {
+    const updateSet = <K extends keyof SetEntry>(exIndex: number, setIndex: number, field: K, value: SetEntry[K]) => {
         const exercises = [...workout.exercises];
-        (exercises[exIndex].sets[setIndex] as any)[field] = value;
+        exercises[exIndex].sets[setIndex][field] = value;
         updateWorkout({ exercises });
     };
 
@@ -408,7 +407,6 @@ export default function ActiveWorkout({ onRefresh }: Props) {
             const dur = exRestMap[exId] ?? (user.rest_timer_default);
             setRestTotal(dur);
             setRestTimer(dur);
-            setShowTimer(true);
 
             // Visual PR indicator only — not saved yet
             const exerciseId = exercises[exIndex].exercise_id;
@@ -443,6 +441,9 @@ export default function ActiveWorkout({ onRefresh }: Props) {
 
         // Save PRs only when workout is completed
         persistPRs();
+
+        // Hide the floating rest timer so it doesn't overlap the summary sheet
+        setRestTimer(0);
 
         setFinishedData({ ...workout, ...finished });
         setPostTitle(workout.name);
@@ -494,8 +495,8 @@ export default function ActiveWorkout({ onRefresh }: Props) {
         if (postTitle && postTitle !== fd.name) {
             updateWorkout({ name: postTitle });
         }
-        const post: any = {
-            id: `w-${fd.id}-${Date.now()}`,
+        const post: FeedPost = {
+            id: `w-${fd.id}-${uuid()}`,
             type: 'workout',
             timestamp: fd.finished_at || new Date().toISOString(),
             description: postDesc || undefined,
@@ -506,11 +507,11 @@ export default function ActiveWorkout({ onRefresh }: Props) {
                 duration_seconds: fd.duration_seconds || elapsed,
                 total_volume_kg: fd.total_volume_kg || totalVolume,
                 total_sets: fd.total_sets || completedSets.length,
-                total_reps: fd.total_reps || completedSets.reduce((s: number, set: any) => s + (set.reps || 0), 0),
+                total_reps: fd.total_reps || completedSets.reduce((s, set) => s + (set.reps || 0), 0),
                 exercises_count: fd.exercises?.length || workout.exercises.length,
-                exercises: (fd.exercises || workout.exercises).map((ex: any) => ({
+                exercises: (fd.exercises || workout.exercises).map(ex => ({
                     exercise_id: ex.exercise_id,
-                    sets: (ex.sets || []).filter((s: any) => s.is_completed).map((s: any) => ({
+                    sets: (ex.sets || []).filter(s => s.is_completed).map(s => ({
                         weight_kg: s.weight_kg,
                         reps: s.reps,
                         set_type: s.set_type,
@@ -590,7 +591,7 @@ export default function ActiveWorkout({ onRefresh }: Props) {
             </div>
 
             {/* Exercise cards */}
-            <div style={{ padding: 'var(--space-md)', paddingBottom: showTimer ? 160 : 100 }}>
+            <div style={{ padding: 'var(--space-md)', paddingBottom: restTimer > 0 ? 160 : 100 }}>
                 {workout.exercises.map((ex, exIdx) => {
                     const info = exerciseDatabase.find(e => e.id === ex.exercise_id);
                     const exRest = exRestMap[ex.id] ?? (user.rest_timer_default);
@@ -643,7 +644,7 @@ export default function ActiveWorkout({ onRefresh }: Props) {
                                 <tbody>
                                     {ex.sets.map((set, setIdx) => {
                                         const prev = getPrevResult(ex.exercise_id, setIdx);
-                                        const rpe = (set as any).rpe ?? '';
+                                        const rpe = set.rpe ?? '';
                                         const prTypes = prSets.get(set.id);
                                         const isPR = !!prTypes && prTypes.length > 0;
                                         const rowBg = isPR
@@ -849,7 +850,7 @@ export default function ActiveWorkout({ onRefresh }: Props) {
             </div>
 
             {/* Rest Timer Bar */}
-            {showTimer && restTimer > 0 && (
+            {restTimer > 0 && (
                 <div className="rest-timer-float">
                     <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>
@@ -862,9 +863,9 @@ export default function ActiveWorkout({ onRefresh }: Props) {
                     <div className="flex gap-xs" style={{ marginLeft: 12 }}>
                         <button className="btn btn-ghost btn-sm" onClick={() => setRestTimer(p => Math.max(0, p - 15))}>−15</button>
                         <button className="btn btn-ghost btn-sm" onClick={() => setRestTimer(p => p + 15)}>+15</button>
-                        <button className="btn btn-sm btn-primary" onClick={() => { setRestTimer(0); setShowTimer(false); }}>Gotowy</button>
+                        <button className="btn btn-sm btn-primary" onClick={() => { setRestTimer(0); }}>Gotowy</button>
                     </div>
-                    <button onClick={() => { setRestTimer(0); setShowTimer(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: 8 }}>
+                    <button onClick={() => { setRestTimer(0); }} aria-label="Zamknij timer odpoczynku" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: 8 }}>
                         <X size={20} color="rgba(255, 255, 255, 0.6)" strokeWidth={1.5} />
                     </button>
                 </div>
@@ -884,6 +885,7 @@ export default function ActiveWorkout({ onRefresh }: Props) {
                     }}>
                         <button
                             onClick={() => { setShowExercises(false); setSearchQuery(''); setPickerFilter(null); }}
+                            aria-label="Zamknij"
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6 }}
                         >
                             <X size={22} color="#fff" strokeWidth={2} />
@@ -902,7 +904,7 @@ export default function ActiveWorkout({ onRefresh }: Props) {
                                 }}
                             />
                             {searchQuery && (
-                                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+                                <button onClick={() => setSearchQuery('')} aria-label="Wyczyść wyszukiwanie" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
                                     <X size={14} color="var(--text-dim)" />
                                 </button>
                             )}
@@ -1015,7 +1017,7 @@ export default function ActiveWorkout({ onRefresh }: Props) {
                         borderBottom: '1px solid rgba(255,255,255,0.06)',
                     }}>
                         <span style={{ font: 'var(--heading-3)' }}>Podsumowanie</span>
-                        <button onClick={handleSkipPublish} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                        <button onClick={handleSkipPublish} aria-label="Pomiń publikację" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                             <X size={22} color="#fff" strokeWidth={1.5} />
                         </button>
                     </div>
@@ -1050,9 +1052,9 @@ export default function ActiveWorkout({ onRefresh }: Props) {
 
                         {/* Date & time */}
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, textAlign: 'center' }}>
-                            {new Date(finishedData.finished_at).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            {new Date(finishedData.finished_at || finishedData.started_at).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                             {' · '}
-                            {new Date(finishedData.finished_at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(finishedData.finished_at || finishedData.started_at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
                         </div>
 
                         {/* Title input */}
@@ -1079,6 +1081,7 @@ export default function ActiveWorkout({ onRefresh }: Props) {
                                         <img src={photo} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 10 }} />
                                         <button
                                             onClick={() => setPostPhotos(prev => prev.filter((_, j) => j !== i))}
+                                            aria-label="Usuń zdjęcie"
                                             style={{
                                                 position: 'absolute', top: -6, right: -6,
                                                 width: 22, height: 22, borderRadius: '50%',

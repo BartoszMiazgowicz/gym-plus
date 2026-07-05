@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import { supabase } from '../lib/supabase';
 import { isDeveloperEmail } from '../lib/developers';
 import { Check } from 'lucide-react';
@@ -33,11 +33,6 @@ export default function FeedbackAdmin() {
     const [items, setItems] = useState<FeedbackItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (!isDev) { navigate('/settings'); return; }
-        load();
-    }, [isDev]);
-
     const load = async () => {
         setLoading(true);
         const { data, error } = await supabase
@@ -48,6 +43,12 @@ export default function FeedbackAdmin() {
         setItems(data || []);
         setLoading(false);
     };
+
+    useEffect(() => {
+        if (!isDev) { navigate('/settings'); return; }
+        load();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isDev]);
 
     const toggleResolved = async (item: FeedbackItem) => {
         const nextStatus = item.status === 'resolved' ? 'open' : 'resolved';
@@ -104,7 +105,7 @@ export default function FeedbackAdmin() {
         <div className="page">
             <div className="page-header">
                 <div className="flex items-center gap-md">
-                    <button className="back-btn" onClick={() => navigate('/settings')}>←</button>
+                    <button className="back-btn" aria-label="Wstecz" onClick={() => navigate('/settings')}>←</button>
                     <h1 className="page-title">Panel uwag</h1>
                 </div>
             </div>

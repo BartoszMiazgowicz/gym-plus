@@ -10,6 +10,8 @@ export function useSync(userId: string | undefined) {
 
   useEffect(() => {
     if (!userId) {
+      // Reset in case a download was still in flight when the user logged out.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInitialLoading(false);
       return;
     }

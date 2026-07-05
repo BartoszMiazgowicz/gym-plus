@@ -154,7 +154,7 @@ export default function TemplateEditor() {
                                         {info && muscleGroupNames[info.primary_muscle]?.pl} · {info && info.equipment}
                                     </p>
                                 </div>
-                                <button className="btn btn-ghost btn-sm" onClick={() => removeExercise(ex.id)} style={{ padding: 4 }}>
+                                <button className="btn btn-ghost btn-sm" onClick={() => removeExercise(ex.id)} aria-label="Usuń ćwiczenie" style={{ padding: 4 }}>
                                     <X size={16} strokeWidth={1.5} style={{ color: '#FF6B6B' }} />
                                 </button>
                             </div>
@@ -210,7 +210,7 @@ export default function TemplateEditor() {
                                         <input type="number" className="set-input" placeholder="sek" value={set.duration_seconds ?? ''} onChange={e => updateSet(ex.id, set.id, { duration_seconds: e.target.value ? Number(e.target.value) : undefined })} />
                                     )}
 
-                                    <button className="btn btn-ghost btn-sm" style={{ padding: 4, width: 32, height: 32 }} onClick={() => removeSet(ex.id, set.id)}>
+                                    <button className="btn btn-ghost btn-sm" style={{ padding: 4, width: 32, height: 32 }} onClick={() => removeSet(ex.id, set.id)} aria-label="Usuń serię">
                                         <X size={14} strokeWidth={1.5} style={{ opacity: 0.4 }} />
                                     </button>
                                 </div>
@@ -259,7 +259,7 @@ export default function TemplateEditor() {
                                     autoFocus
                                 />
                                 {searchQuery && (
-                                    <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                                    <button onClick={() => setSearchQuery('')} aria-label="Wyczyść wyszukiwanie" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                                         <X size={14} color="var(--text-dim)" />
                                     </button>
                                 )}

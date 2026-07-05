@@ -1,9 +1,12 @@
 import Anthropic from "npm:@anthropic-ai/sdk@0.32.1";
+import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const DAILY_LIMIT = 20;
 
 const RESULT_SCHEMA = {
   type: "object",
@@ -28,6 +31,38 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Require a real logged-in user (not just the public anon key) so this
+    // paid endpoint can't be spammed anonymously, and so we can rate-limit per user.
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+    });
+    const { data: { user }, error: authError } = await callerClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Musisz być zalogowany, aby użyć tej funkcji." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Per-user daily rate limit, tracked with the service-role client (bypasses RLS).
+    const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: usageRow } = await admin
+      .from("meal_photo_usage")
+      .select("count")
+      .eq("user_id", user.id)
+      .eq("day", today)
+      .maybeSingle();
+
+    const currentCount = usageRow?.count ?? 0;
+    if (currentCount >= DAILY_LIMIT) {
+      return new Response(JSON.stringify({ error: `Osiągnięto dzienny limit ${DAILY_LIMIT} analiz zdjęć. Spróbuj ponownie jutro.` }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { image, media_type } = await req.json();
     if (!image || typeof image !== "string") {
       return new Response(JSON.stringify({ error: "Brak zdjęcia" }), {
@@ -35,6 +70,10 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    await admin
+      .from("meal_photo_usage")
+      .upsert({ user_id: user.id, day: today, count: currentCount + 1 }, { onConflict: "user_id,day" });
 
     const response = await anthropic.messages.create({
       model: "claude-opus-4-8",

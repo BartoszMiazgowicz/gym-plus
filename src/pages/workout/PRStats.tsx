@@ -17,6 +17,7 @@ export default function PRStats() {
     const [expandedEx, setExpandedEx] = useState<string | null>(null);
 
     // --- Time filters ---
+    // eslint-disable-next-line react-hooks/purity -- used only as a period-filter boundary, staleness across renders is harmless
     const now = Date.now();
     const periodMs: Record<Period, number> = {
         week: 7 * 24 * 60 * 60 * 1000,

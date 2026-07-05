@@ -44,7 +44,9 @@ function bfCategory(bf: number, gender?: string): { label: string; color: string
     return { label: 'Wysoka', color: '#FF6B6B' };
 }
 
-const MEASURE_FIELDS: { key: keyof BodyMeasurement; label: string; hint: string }[] = [
+type MeasureKey = 'neck_cm' | 'waist_cm' | 'hips_cm';
+
+const MEASURE_FIELDS: { key: MeasureKey; label: string; hint: string }[] = [
     { key: 'neck_cm', label: 'Szyja', hint: 'Obwód u podstawy szyi' },
     { key: 'waist_cm', label: 'Talia', hint: 'Obwód w najwęższym miejscu' },
     { key: 'hips_cm', label: 'Biodra', hint: 'Obwód w najszerszym miejscu' },
@@ -90,7 +92,7 @@ export default function Physique() {
         for (const f of MEASURE_FIELDS) {
             const val = form[f.key];
             if (val && !isNaN(Number(val))) {
-                (entry as any)[f.key] = Number(val);
+                entry[f.key] = Number(val);
             }
         }
         // Auto-calculate body fat if we have what we need
@@ -128,7 +130,7 @@ export default function Physique() {
         <div className="page">
             <div className="page-header">
                 <div className="flex items-center gap-md">
-                    <button className="back-btn" onClick={() => navigate(-1)}>←</button>
+                    <button className="back-btn" aria-label="Wstecz" onClick={() => navigate(-1)}>←</button>
                     <h1 className="page-title">Sylwetka</h1>
                 </div>
             </div>

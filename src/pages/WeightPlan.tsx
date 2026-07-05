@@ -37,7 +37,9 @@ export default function WeightPlan() {
     const weights = getWeightEntries();
     const currentWeight = weights.length > 0 ? weights[0].weight_kg : 80;
 
+    // Age only needs to be right to the day, so a stale value across renders is harmless.
     const userAge = user.birth_date
+        // eslint-disable-next-line react-hooks/purity
         ? Math.floor((Date.now() - new Date(user.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
         : 25;
 
@@ -105,7 +107,7 @@ export default function WeightPlan() {
         <div className="page">
             <div className="page-header">
                 <div className="flex items-center gap-md">
-                    <button className="back-btn" onClick={() => navigate(-1)}>←</button>
+                    <button className="back-btn" aria-label="Wstecz" onClick={() => navigate(-1)}>←</button>
                     <h1 className="page-title">Plan wagowy</h1>
                 </div>
             </div>
