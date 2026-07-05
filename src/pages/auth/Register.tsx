@@ -95,6 +95,7 @@ export default function Register() {
           backdropFilter: 'blur(40px)',
         }}>
           <div style={{ marginBottom: 'var(--space-lg)' }}>
+            <img src="/logo.png" alt="GYM+" style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 12 }} />
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5, marginBottom: 12 }}>GYM+</h1>
             <h2 style={{ font: 'var(--heading-3)', marginBottom: 8 }}>Zarejestruj się</h2>
             <p style={{ font: 'var(--body)', color: 'var(--text-secondary)' }}>Dołącz do Gym-plus</p>

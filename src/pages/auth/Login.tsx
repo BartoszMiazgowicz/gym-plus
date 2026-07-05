@@ -53,6 +53,7 @@ export default function Login() {
         }}>
           {/* Logo */}
           <div style={{ marginBottom: 'var(--space-lg)' }}>
+            <img src="/logo.png" alt="GYM+" style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 12 }} />
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5, marginBottom: 12 }}>
               GYM+
             </h1>

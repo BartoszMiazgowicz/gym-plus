@@ -338,6 +338,7 @@ export default function Profile() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3))',
                         overflow: 'hidden',
+                        flexShrink: 0,
                     }}>
                         {user.avatar_url ? (
                             <img

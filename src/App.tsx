@@ -4,6 +4,7 @@ import { getUser } from './data/store';
 import { useAuth } from './contexts/AuthContext';
 import { useSync } from './hooks/useSync';
 import BottomNav from './components/BottomNav';
+import LoadingScreen from './components/LoadingScreen';
 import Dashboard from './pages/Dashboard';
 import WorkoutHome from './pages/workout/WorkoutHome';
 import ActiveWorkout from './pages/workout/ActiveWorkout';
@@ -60,7 +61,7 @@ function App() {
   const waitingForSync = !!authUser && (isSyncing || user.id !== authUser.id);
 
   if (isLoading || waitingForSync) {
-    return <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', height: '100vh', display: 'flex' }}><div className="animate-pulse">Loading...</div></div>;
+    return <LoadingScreen />;
   }
 
   if (!authUser) {
