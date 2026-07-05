@@ -29,6 +29,7 @@ import Profile from './pages/Profile';
 import Physique from './pages/Physique';
 import WeightPlan from './pages/WeightPlan';
 import Settings from './pages/Settings';
+import FeedbackAdmin from './pages/FeedbackAdmin';
 import Onboarding from './pages/Onboarding';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -109,6 +110,7 @@ function App() {
           <Route path="/physique" element={<Physique />} />
           <Route path="/weight-plan" element={<WeightPlan />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/feedback" element={<FeedbackAdmin />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <BottomNav />

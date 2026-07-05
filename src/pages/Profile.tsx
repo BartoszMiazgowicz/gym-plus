@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getUser, getCompletedWorkouts, getBadges, saveUser, getAllMeals, getWeightEntries, getAllWater } from '../data/store';
-import { Settings, LogOut, Flame, Pencil } from 'lucide-react';
+import { isDeveloperEmail } from '../lib/developers';
+import { Settings, LogOut, Flame, Pencil, Code2 } from 'lucide-react';
 
 const ALL_BADGE_MAP: Record<string, { icon: string; name: string }> = {
     // Workout badges
@@ -274,7 +275,8 @@ function getStreak(): number {
 
 export default function Profile() {
     const navigate = useNavigate();
-    const { signOut } = useAuth();
+    const { signOut, user: authUser } = useAuth();
+    const isDev = isDeveloperEmail(authUser?.email);
     const [user, setUser] = useState(getUser());
     const workoutCount = getCompletedWorkouts().length;
     const streak = useMemo(() => getStreak(), []);
@@ -351,8 +353,23 @@ export default function Profile() {
                         )}
                     </div>
                     <div>
-                        <div style={{ font: 'var(--heading-3)', color: 'var(--text-primary)' }}>
+                        <div className="flex items-center gap-xs" style={{ font: 'var(--heading-3)', color: 'var(--text-primary)' }}>
                             {user.name || 'Brak imienia'}
+                            {isDev && (
+                                <span
+                                    title="Konto deweloperskie"
+                                    className="flex items-center gap-xs"
+                                    style={{
+                                        fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                                        color: '#A78BFA', background: 'rgba(167, 139, 250, 0.15)',
+                                        border: '1px solid rgba(167, 139, 250, 0.4)',
+                                        borderRadius: 999, padding: '2px 7px',
+                                    }}
+                                >
+                                    <Code2 size={11} strokeWidth={2} />
+                                    DEV
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-xs mt-xs">
                             <span style={{ font: 'var(--caption)', color: 'var(--text-secondary)' }}>

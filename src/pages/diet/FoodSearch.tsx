@@ -2,10 +2,42 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { foodDatabase } from '../../data/foods';
 import { saveMeal, uuid, todayStr } from '../../data/store';
+import { supabase } from '../../lib/supabase';
 import type { MealEntry, FoodItem } from '../../types/diet';
-import { ChevronLeft, Search, Check } from 'lucide-react';
+import { ChevronLeft, Search, Check, Camera, Sparkles } from 'lucide-react';
 
 interface Props { onRefresh: () => void; }
+
+interface AIMealResult {
+    food_name: string;
+    amount_g: number;
+    calories: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    note: string;
+}
+
+function resizeImageToBase64(file: File): Promise<{ dataUrl: string; base64: string }> {
+    return new Promise((resolve, reject) => {
+        const img = new window.Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            const maxW = 1024;
+            const scale = Math.min(1, maxW / Math.max(img.width, img.height));
+            const w = Math.round(img.width * scale);
+            const h = Math.round(img.height * scale);
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            resolve({ dataUrl, base64: dataUrl.split(',')[1] });
+        };
+        img.onerror = reject;
+        img.src = url;
+    });
+}
 
 export default function FoodSearch({ onRefresh }: Props) {
     const navigate = useNavigate();
@@ -14,6 +46,12 @@ export default function FoodSearch({ onRefresh }: Props) {
     const [search, setSearch] = useState('');
     const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
     const [amount, setAmount] = useState('');
+    const [aiStep, setAiStep] = useState<'idle' | 'loading' | 'result' | 'error'>('idle');
+    const [aiImagePreview, setAiImagePreview] = useState<string | null>(null);
+    const [aiError, setAiError] = useState('');
+    const [aiForm, setAiForm] = useState<{ food_name: string; amount_g: string; calories: string; protein_g: string; carbs_g: string; fat_g: string; note: string }>({
+        food_name: '', amount_g: '', calories: '', protein_g: '', carbs_g: '', fat_g: '', note: '',
+    });
 
     const filtered = foodDatabase.filter(f =>
         f.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -47,6 +85,181 @@ export default function FoodSearch({ onRefresh }: Props) {
     const mealLabels: Record<string, string> = {
         breakfast: 'Śniadanie', lunch: 'Obiad', dinner: 'Kolacja', snack: 'Przekąski',
     };
+
+    const resetAI = () => {
+        setAiStep('idle');
+        setAiImagePreview(null);
+        setAiError('');
+    };
+
+    const handleAIPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+
+        setAiStep('loading');
+        setAiError('');
+        try {
+            const { dataUrl, base64 } = await resizeImageToBase64(file);
+            setAiImagePreview(dataUrl);
+
+            const { data, error } = await supabase.functions.invoke<AIMealResult & { error?: string }>('analyze-meal-photo', {
+                body: { image: base64, media_type: 'image/jpeg' },
+            });
+
+            if (error || !data || data.error) {
+                throw new Error(data?.error || error?.message || 'Analiza nie powiodła się');
+            }
+
+            setAiForm({
+                food_name: data.food_name || '',
+                amount_g: String(Math.round(data.amount_g || 0)),
+                calories: String(Math.round(data.calories || 0)),
+                protein_g: String(Math.round((data.protein_g || 0) * 10) / 10),
+                carbs_g: String(Math.round((data.carbs_g || 0) * 10) / 10),
+                fat_g: String(Math.round((data.fat_g || 0) * 10) / 10),
+                note: data.note || '',
+            });
+            setAiStep('result');
+        } catch (err) {
+            console.error('AI meal scan failed:', err);
+            setAiError(err instanceof Error ? err.message : 'Coś poszło nie tak. Spróbuj ponownie.');
+            setAiStep('error');
+        }
+    };
+
+    const handleAIConfirm = () => {
+        const entry: MealEntry = {
+            id: uuid(),
+            date: todayStr(),
+            meal_type: mealType,
+            food_id: `ai-${uuid()}`,
+            food_name: aiForm.food_name || 'Posiłek (AI)',
+            amount_g: Number(aiForm.amount_g) || 0,
+            calories: Number(aiForm.calories) || 0,
+            protein: Number(aiForm.protein_g) || 0,
+            carbs: Number(aiForm.carbs_g) || 0,
+            fat: Number(aiForm.fat_g) || 0,
+            created_at: new Date().toISOString(),
+        };
+        saveMeal(entry);
+        onRefresh();
+        navigate('/diet');
+    };
+
+    if (aiStep !== 'idle') {
+        return (
+            <div className="page">
+                <div className="page-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <button onClick={resetAI} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, marginLeft: -8 }}>
+                            <ChevronLeft size={24} color="#fff" strokeWidth={1.5} />
+                        </button>
+                        <span style={{ font: 'var(--heading-3)' }}>AI Kalkulator</span>
+                    </div>
+                </div>
+
+                {aiImagePreview && (
+                    <img
+                        src={aiImagePreview}
+                        alt="Zdjęcie posiłku"
+                        style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-lg)' }}
+                    />
+                )}
+
+                {aiStep === 'loading' && (
+                    <div className="card animate-pulse" style={{ textAlign: 'center', padding: '32px 0' }}>
+                        <Sparkles size={28} strokeWidth={1.5} style={{ color: 'var(--accent)', marginBottom: 8 }} />
+                        <div style={{ font: 'var(--body)' }}>Analizuję zdjęcie...</div>
+                    </div>
+                )}
+
+                {aiStep === 'error' && (
+                    <div className="card" style={{ textAlign: 'center', padding: '24px' }}>
+                        <div style={{ color: 'var(--warning)', marginBottom: 12, font: 'var(--body)' }}>{aiError}</div>
+                        <button className="btn btn-secondary" onClick={resetAI}>Wróć</button>
+                    </div>
+                )}
+
+                {aiStep === 'result' && (
+                    <>
+                        {aiForm.note && (
+                            <div style={{ font: 'var(--caption)', color: 'var(--text-muted)', marginBottom: 'var(--space-md)' }}>
+                                {aiForm.note}
+                            </div>
+                        )}
+
+                        <div className="input-group">
+                            <label className="input-label">Nazwa</label>
+                            <input
+                                className="input"
+                                value={aiForm.food_name}
+                                onChange={e => setAiForm({ ...aiForm, food_name: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label">Gramy (cała porcja)</label>
+                            <input
+                                type="number"
+                                className="input"
+                                value={aiForm.amount_g}
+                                onChange={e => setAiForm({ ...aiForm, amount_g: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label">Kalorie (kcal)</label>
+                            <input
+                                type="number"
+                                className="input"
+                                value={aiForm.calories}
+                                onChange={e => setAiForm({ ...aiForm, calories: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="flex gap-sm mb-lg">
+                            <div className="input-group" style={{ flex: 1 }}>
+                                <label className="input-label" style={{ color: 'var(--protein)' }}>Białko (g)</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={aiForm.protein_g}
+                                    onChange={e => setAiForm({ ...aiForm, protein_g: e.target.value })}
+                                />
+                            </div>
+                            <div className="input-group" style={{ flex: 1 }}>
+                                <label className="input-label" style={{ color: 'var(--carbs)' }}>Węgle (g)</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={aiForm.carbs_g}
+                                    onChange={e => setAiForm({ ...aiForm, carbs_g: e.target.value })}
+                                />
+                            </div>
+                            <div className="input-group" style={{ flex: 1 }}>
+                                <label className="input-label">Tłuszcz (g)</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={aiForm.fat_g}
+                                    onChange={e => setAiForm({ ...aiForm, fat_g: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ font: 'var(--caption)', color: 'var(--text-muted)', marginBottom: 'var(--space-sm)' }}>
+                            Dodaj do: <strong>{mealLabels[mealType]}</strong>
+                        </div>
+
+                        <button className="btn btn-primary btn-full btn-lg" onClick={handleAIConfirm} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                            <Check size={16} strokeWidth={2} /> Dodaj do {mealLabels[mealType].toLowerCase()}
+                        </button>
+                    </>
+                )}
+            </div>
+        );
+    }
 
     if (selectedFood) {
         const grams = Number(amount) || selectedFood.default_serving_g;
@@ -147,6 +360,16 @@ export default function FoodSearch({ onRefresh }: Props) {
                 <Search size={18} strokeWidth={1.5} style={{ opacity: 0.5 }} />
                 <input placeholder="Szukaj produktu..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
             </div>
+
+            <label
+                className="card-gradient mb-lg"
+                style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: 14 }}
+            >
+                <Camera size={20} strokeWidth={1.5} />
+                <span style={{ font: 'var(--body)', fontWeight: 600, flex: 1 }}>AI Kalkulator — zrób zdjęcie posiłku</span>
+                <Sparkles size={16} strokeWidth={1.5} />
+                <input type="file" accept="image/*" capture="environment" hidden onChange={handleAIPhotoSelect} />
+            </label>
 
             {!search && (
                 <div className="chips-row">

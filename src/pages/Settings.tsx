@@ -4,8 +4,9 @@ import { getUser, saveUser } from '../data/store';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import ImageCropper from '../components/ImageCropper';
-import { ChevronRight, ChevronDown, Target, SlidersHorizontal, Volume2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, Target, SlidersHorizontal, Volume2, MessageSquareWarning, ClipboardList } from 'lucide-react';
 import { previewSound, SOUND_LABELS } from '../utils/sounds';
+import { isDeveloperEmail } from '../lib/developers';
 import type { User } from '../types/user';
 
 export default function Settings() {
@@ -18,6 +19,10 @@ export default function Settings() {
     const [originalUsername] = useState(getUser().username);
     const [cropperImage, setCropperImage] = useState<string | null>(null);
     const [showAppSettings, setShowAppSettings] = useState(false);
+    const isDev = isDeveloperEmail(authUser?.email);
+    const [showFeedback, setShowFeedback] = useState(false);
+    const [feedbackText, setFeedbackText] = useState('');
+    const [feedbackStatus, setFeedbackStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', user.theme);
@@ -103,6 +108,27 @@ export default function Settings() {
         }
     };
 
+    const handleSendFeedback = async () => {
+        if (!feedbackText.trim() || !authUser) return;
+        setFeedbackStatus('sending');
+        const { error } = await supabase.from('feedback').insert({
+            user_id: authUser.id,
+            username: user.username || user.name || authUser.email,
+            message: feedbackText.trim(),
+        });
+        if (error) {
+            console.error('Feedback insert error:', error);
+            setFeedbackStatus('error');
+            return;
+        }
+        setFeedbackStatus('sent');
+        setFeedbackText('');
+        setTimeout(() => {
+            setShowFeedback(false);
+            setFeedbackStatus('idle');
+        }, 1200);
+    };
+
     return (
         <div className="page">
             <div className="page-header">
@@ -161,6 +187,33 @@ export default function Settings() {
                     </div>
                 </div>
             </div>
+
+            {/* Zgłoś uwagę (beta) */}
+            <div
+                className="card mb-lg"
+                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                onClick={() => setShowFeedback(true)}
+            >
+                <span className="flex items-center gap-sm" style={{ fontSize: 14 }}>
+                    <MessageSquareWarning size={18} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+                    Zgłoś uwagę / błąd (beta)
+                </span>
+                <ChevronRight size={18} strokeWidth={1.5} style={{ color: 'var(--text-muted)' }} />
+            </div>
+
+            {isDev && (
+                <div
+                    className="card mb-lg"
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                    onClick={() => navigate('/settings/feedback')}
+                >
+                    <span className="flex items-center gap-sm" style={{ fontSize: 14 }}>
+                        <ClipboardList size={18} strokeWidth={1.5} style={{ color: '#A78BFA' }} />
+                        Panel uwag (deweloperskie)
+                    </span>
+                    <ChevronRight size={18} strokeWidth={1.5} style={{ color: 'var(--text-muted)' }} />
+                </div>
+            )}
 
             {/* Cele kaloryczne */}
             <div
@@ -298,6 +351,48 @@ export default function Settings() {
                     onConfirm={handleCropConfirm}
                     onCancel={() => setCropperImage(null)}
                 />
+            )}
+
+            {/* Feedback bottom sheet */}
+            {showFeedback && (
+                <>
+                    <div className="bottom-sheet-overlay" onClick={() => { setShowFeedback(false); setFeedbackStatus('idle'); }} />
+                    <div className="bottom-sheet">
+                        <div className="bottom-sheet-handle" />
+                        <div className="bottom-sheet-content">
+                            <div className="flex items-center justify-between mb-sm">
+                                <h3 className="section-title" style={{ margin: 0 }}>Zgłoś uwagę</h3>
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={handleSendFeedback}
+                                    disabled={feedbackStatus === 'sending' || feedbackStatus === 'sent' || !feedbackText.trim()}
+                                >
+                                    {feedbackStatus === 'sending' ? 'Wysyłanie...' : feedbackStatus === 'sent' ? 'Wysłano ✓' : 'Wyślij'}
+                                </button>
+                            </div>
+                            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+                                Aplikacja jest w wersji beta — jeśli coś nie działa, wygląda dziwnie albo masz pomysł na usprawnienie, napisz tutaj. Uwaga trafi bezpośrednio do dewelopera.
+                            </p>
+                            <textarea
+                                value={feedbackText}
+                                onChange={e => setFeedbackText(e.target.value)}
+                                placeholder="Opisz błąd lub uwagę..."
+                                rows={5}
+                                autoFocus
+                                style={{
+                                    width: '100%', background: 'var(--surface)', border: '1px solid var(--border)',
+                                    borderRadius: 10, padding: '12px 14px', color: 'var(--text-primary)',
+                                    fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box',
+                                }}
+                            />
+                            {feedbackStatus === 'error' && (
+                                <div style={{ fontSize: 12, color: 'var(--warning)', marginTop: 8 }}>
+                                    Nie udało się wysłać. Spróbuj ponownie.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     );
